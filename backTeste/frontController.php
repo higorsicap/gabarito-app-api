@@ -4,7 +4,7 @@ include_once 'conexao.php';
 include_once 'frontService.php';
 
 $input = json_decode(file_get_contents("php://input"), true);
-$opcao = $input['s'] ?? null;
+$opcao = $_POST['s'];
 
 switch ($opcao) {
     case '1':
@@ -15,6 +15,9 @@ switch ($opcao) {
         break;
     case '3':
         f3();
+        break;
+    case '4':
+        f4();
         break;
 }
 function f1()
@@ -29,5 +32,17 @@ function f2()
 
 function f3()
 {
-    echo listarProvas();
+    $dados = [
+        'id_aplicador' => $_POST['id_aplicador'],
+    ];
+    echo listarProvas($dados);
+}
+
+function f4(){
+    $dados = [
+        'cpf_aplicador' => $_POST['cpf_aplicador'],
+        'senha_aplicador' => $_POST['senha_aplicador']
+    ];
+    echo loginCliente($dados);
+
 }
