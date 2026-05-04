@@ -53,13 +53,14 @@ function listarProvas($dados)
         $pdo_acesso->beginTransaction();
 
         $listarProvas = $pdo_acesso->prepare("
-        SELECT DISTINCT 
+        SELECT  
             c.id_cliente,
             c.nome_cliente,
             a.id_avaliacao,
             a.descricao_avaliacao,
             a.id_anoletivo,
-            a3.id_aplicador 
+            a3.id_aplicador,
+            a2.id_serie
         FROM clientes c 
         JOIN municipio m  ON m.id_cliente = c.id_cliente 
         JOIN avaliacao a ON a.id_avaliacao = m.id_avaliacao 
@@ -163,3 +164,32 @@ function loginCliente($dados)
         echo 'Erro: ' . $e->getMessage();
     }
 }
+
+// function baixarProva($dados)
+// {
+//     try {
+//         $pdo_acesso = $GLOBALS['pdo_acesso'];
+//         $pdo_acesso->beginTransaction();
+
+//         $baixarProva = $pdo_acesso->prepare("
+//         SELECT 
+//             t.id_avaliacao,
+//             ap.id_avaliacao_pergunta,
+//             apa.alternativa 
+//         FROM avaliacao_serie t 
+//         JOIN avaliacao_pergunta ap ON ap.id_avaliacao_serie = t.id_avaliacao_serie 
+//         JOIN avaliacao_pergunta_alternativa apa ON apa.id_avaliacao_pergunta = ap.id_avaliacao_pergunta 
+//         WHERE t.id_avaliacao = :id_avalicao
+//             AND apa.is_excluido = FALSE 
+//             AND apa.is_correta = true
+//         ");
+
+//         $baixarProva->bindValue(':id_avaliacao', $dados['id_avaliacao'], PDO::PARAM_INT);
+//         $baixarProva->execute();
+//         $resultado = $baixarProva->fetch(PDO::FETCH_ASSOC);
+//         $pdo_acesso->commit();
+//         return json_encode($resultado);
+//     } catch (Exception $e) {
+//         echo 'Erro: ' . $e->getMessage();
+//     }
+// }

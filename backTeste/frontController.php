@@ -19,6 +19,9 @@ switch ($opcao) {
     case '4':
         f4();
         break;
+    // case '5':
+    //     f5();
+    //     break;
 }
 function f1()
 {
@@ -46,3 +49,10 @@ function f4(){
     echo loginCliente($dados);
 
 }
+
+// function f5(){
+//     $dados = [
+//         'id_avaliacao' => $_POST['id_avaliacao']
+//     ];
+//     echo baixarProva($dados);
+// }
