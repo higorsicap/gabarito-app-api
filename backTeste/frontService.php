@@ -35,7 +35,7 @@ function listarClientes()
                 c.email_cliente  
             FROM clientes c 
             WHERE c.email_cliente !~ '^[0-9]+$'
-            ORDER BY c.email_cliente  asc        
+            ORDER BY c.email_cliente  asc
         ");
         $listarClientes->execute();
         $resultado = $listarClientes->fetchAll(PDO::FETCH_ASSOC);
@@ -60,14 +60,19 @@ function listarProvas($dados)
             a.descricao_avaliacao,
             a.id_anoletivo,
             a3.id_aplicador,
-            a2.id_serie
+            a2.id_serie,
+            t.descricao_turma,
+            t.id_escola
         FROM clientes c 
         JOIN municipio m  ON m.id_cliente = c.id_cliente 
         JOIN avaliacao a ON a.id_avaliacao = m.id_avaliacao 
         JOIN aplicador a3 ON a3.id_avaliacao = a.id_avaliacao 
         JOIN avaliacao_serie a2 ON a2.id_avaliacao = a.id_avaliacao 
+        JOIN serie s ON s.id_serie = a2.id_serie 
+        JOIN turma t ON t.id_serie  = s.id_serie 
         WHERE c.email_cliente !~ '^[0-9]+$'
             AND a3.id_aplicador = :id_aplicador
+            -- AND t.id_escola = :id_escola
             AND a.is_excluido = false
         ORDER BY c.nome_cliente ASC
         ");
@@ -165,31 +170,131 @@ function loginCliente($dados)
     }
 }
 
-// function baixarProva($dados)
-// {
-//     try {
-//         $pdo_acesso = $GLOBALS['pdo_acesso'];
-//         $pdo_acesso->beginTransaction();
+function baixarProva($dados)
+{
+    try {
+        $pdo_acesso = $GLOBALS['pdo_acesso'];
+        $pdo_acesso->beginTransaction();
 
-//         $baixarProva = $pdo_acesso->prepare("
-//         SELECT 
-//             t.id_avaliacao,
-//             ap.id_avaliacao_pergunta,
-//             apa.alternativa 
-//         FROM avaliacao_serie t 
-//         JOIN avaliacao_pergunta ap ON ap.id_avaliacao_serie = t.id_avaliacao_serie 
-//         JOIN avaliacao_pergunta_alternativa apa ON apa.id_avaliacao_pergunta = ap.id_avaliacao_pergunta 
-//         WHERE t.id_avaliacao = :id_avalicao
-//             AND apa.is_excluido = FALSE 
-//             AND apa.is_correta = true
-//         ");
+        $baixarProva = $pdo_acesso->prepare("
+        SELECT 
+            COALESCE(
+                json_agg(
+                    json_build_object(
+                        'nome_escola', base.nome_escola,
+                        'id_anoletivo', base.id_anoletivo,
+                        'id_serie', base.id_serie,
+                        'id_avaliacao', base.id_avaliacao,
+                        'descricao_turma', base.descricao_turma,
+                        'id_caderno_de_prova_disciplina', base.id_caderno_prova_disciplina,
+                        'questoes', base.questoes
+                    )
+                    ORDER BY 
+                        base.nome_escola,
+                        base.descricao_turma,
+                        base.id_caderno_prova_disciplina
+                ),
+                '[]'::json
+            ) AS dados
 
-//         $baixarProva->bindValue(':id_avaliacao', $dados['id_avaliacao'], PDO::PARAM_INT);
-//         $baixarProva->execute();
-//         $resultado = $baixarProva->fetch(PDO::FETCH_ASSOC);
-//         $pdo_acesso->commit();
-//         return json_encode($resultado);
-//     } catch (Exception $e) {
-//         echo 'Erro: ' . $e->getMessage();
-//     }
-// }
+        FROM (
+
+            SELECT 
+                e.nome_escola,
+                a.id_anoletivo,
+                t2.id_serie,
+                t.id_avaliacao,
+                t2.descricao_turma,
+                ap.id_caderno_prova_disciplina,
+
+                json_agg(
+                    json_build_object(
+                        'numero_questao', ap.numero_questao,
+                        'alternativa', apa.alternativa
+                    )
+                    ORDER BY ap.numero_questao::INTEGER ASC
+                ) AS questoes
+
+            FROM avaliacao_serie t 
+
+            JOIN avaliacao_pergunta ap 
+                ON ap.id_avaliacao_serie = t.id_avaliacao_serie 
+
+            JOIN avaliacao_pergunta_alternativa apa 
+                ON apa.id_avaliacao_pergunta = ap.id_avaliacao_pergunta 
+
+            JOIN avaliacao a 
+                ON a.id_avaliacao = t.id_avaliacao 
+
+            JOIN municipio m 
+                ON m.id_avaliacao = a.id_avaliacao 
+
+            JOIN escola e  
+                ON e.id_municipio = m.id_municipio 
+
+            JOIN turma t2 
+                ON t2.id_escola = e.id_escola
+                AND t2.id_serie = t.id_serie
+
+            WHERE apa.is_correta IS TRUE
+                AND apa.is_excluido IS FALSE
+                AND ap.is_excluido IS FALSE
+                AND ap.is_atual IS TRUE
+                AND a.id_anoletivo = :id_anoletivo
+                AND a.id_avaliacao = :id_avaliacao
+                AND e.id_escola = :id_escola
+                AND t.id_serie = :id_serie
+
+            GROUP BY 
+                e.nome_escola,
+                a.id_anoletivo,
+                t2.id_serie,
+                t.id_avaliacao,
+                t2.descricao_turma,
+                ap.id_caderno_prova_disciplina
+
+            ORDER BY 
+                t2.descricao_turma,
+                ap.id_caderno_prova_disciplina
+
+        ) base;
+        ");
+
+        $baixarProva->bindValue(':id_avaliacao', $dados['id_avaliacao'], PDO::PARAM_INT);
+        $baixarProva->bindValue(':id_anoletivo', $dados['id_anoletivo'], PDO::PARAM_INT);
+        $baixarProva->bindValue(':id_escola', $dados['id_escola'], PDO::PARAM_INT);
+        $baixarProva->bindValue(':id_serie', $dados['id_serie'], PDO::PARAM_INT);
+        $baixarProva->execute();
+        $resultado = $baixarProva->fetch(PDO::FETCH_ASSOC);
+        $pdo_acesso->commit();
+        return json_encode($resultado);
+    } catch (Exception $e) {
+        echo 'Erro: ' . $e->getMessage();
+    }
+}
+
+function listarEscolas($dados){
+    try {
+        $pdo_acesso = $GLOBALS['pdo_acesso'];
+        $pdo_acesso->beginTransaction();
+
+        $listarEscolas = $pdo_acesso->prepare("
+            SELECT 
+                id_escola,
+                nome_escola
+            FROM escola e
+            JOIN municipio m ON m.id_municipio = e.id_municipio 
+            JOIN avaliacao a ON a.id_avaliacao = m.id_avaliacao 
+            WHERE (:id_anoletivo = -1 or a.id_anoletivo = :id_anoletivo)
+            ORDER BY nome_escola  asc   
+        ");
+
+        $listarEscolas->bindValue(':id_anoletivo', $dados['id_anoletivo'], PDO::PARAM_INT);
+        $listarEscolas->execute();
+        $resultado = $listarEscolas->fetchAll(PDO::FETCH_ASSOC);
+        $pdo_acesso->commit();
+        return json_encode($resultado);
+    } catch (Exception $e) {
+        echo 'Erro: ' . $e->getMessage();
+    }
+}

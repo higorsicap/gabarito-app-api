@@ -19,9 +19,14 @@ switch ($opcao) {
     case '4':
         f4();
         break;
-    // case '5':
-    //     f5();
-    //     break;
+    case '5':
+        f5();
+        break;
+    case '6':
+        f6();
+        break;
+    default:
+        echo "Opção inválida.";
 }
 function f1()
 {
@@ -41,18 +46,30 @@ function f3()
     echo listarProvas($dados);
 }
 
-function f4(){
+function f4()
+{
     $dados = [
         'cpf_aplicador' => $_POST['cpf_aplicador'],
         'senha_aplicador' => $_POST['senha_aplicador']
     ];
     echo loginCliente($dados);
-
 }
 
-// function f5(){
-//     $dados = [
-//         'id_avaliacao' => $_POST['id_avaliacao']
-//     ];
-//     echo baixarProva($dados);
-// }
+function f5()
+{
+    $dados = [
+        'id_avaliacao' => $_POST['id_avaliacao'],
+        'id_anoletivo' => $_POST['id_anoletivo'],
+        'id_escola' => $_POST['id_escola'],
+        'id_serie' => $_POST['id_serie']
+    ];
+    echo json_encode(baixarProva($dados));
+}
+
+function f6()
+{
+    $dados = [
+        'id_anoletivo' => $_POST['id_anoletivo']
+    ];
+    echo listarEscolas($dados);
+}
