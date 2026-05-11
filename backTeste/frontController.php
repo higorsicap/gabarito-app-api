@@ -61,9 +61,11 @@ function f5()
         'id_avaliacao' => $_POST['id_avaliacao'],
         'id_anoletivo' => $_POST['id_anoletivo'],
         'id_escola' => $_POST['id_escola'],
-        'id_serie' => $_POST['id_serie']
+        'id_serie' => $_POST['id_serie'],
+        'descricao_turma' => $_POST['descricao_turma'],
+        'id_caderno_prova_disciplina' => $_POST['id_caderno_prova_disciplina']
     ];
-    echo json_encode(baixarProva($dados));
+    echo baixarProva($dados);
 }
 
 function f6()
