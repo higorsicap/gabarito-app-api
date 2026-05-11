@@ -71,6 +71,7 @@ function f5()
 function f6()
 {
     $dados = [
+        'id_aplicador' => $_POST['id_aplicador'],
         'id_anoletivo' => $_POST['id_anoletivo']
     ];
     echo listarEscolas($dados);

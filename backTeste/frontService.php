@@ -298,10 +298,13 @@ function listarEscolas($dados)
             FROM escola e
             JOIN municipio m ON m.id_municipio = e.id_municipio 
             JOIN avaliacao a ON a.id_avaliacao = m.id_avaliacao 
-            WHERE (:id_anoletivo = -1 or a.id_anoletivo = :id_anoletivo)
+            JOIN aplicador a2 ON a2.id_avaliacao = a.id_avaliacao 
+            WHERE a2.id_aplicador =:id_aplicador    
+                AND (:id_anoletivo = -1 or a.id_anoletivo = :id_anoletivo)
             ORDER BY nome_escola  asc   
         ");
         $listarEscolas->bindValue(':id_anoletivo', $dados['id_anoletivo'], PDO::PARAM_INT);
+        $listarEscolas->bindValue(':id_aplicador', $dados['id_aplicador'], PDO::PARAM_INT); 
         $listarEscolas->execute();
         $resultado = $listarEscolas->fetchAll(PDO::FETCH_ASSOC);
         $pdo_acesso->commit();
